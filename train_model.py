@@ -34,8 +34,11 @@ def build_model():
         Conv2D(128, (3, 3), activation='relu'),
         MaxPooling2D(2, 2),
         
+        Conv2D(128, (3, 3), activation='relu'),
+        MaxPooling2D(2, 2),
+        
         Flatten(),
-        Dense(512, activation='relu'),
+        Dense(256, activation='relu'),
         Dropout(0.5),
         Dense(1, activation='sigmoid') # Binary classification: Cancer (1) or Non-Cancer (0)
     ])

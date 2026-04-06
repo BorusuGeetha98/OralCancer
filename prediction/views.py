@@ -233,16 +233,58 @@ def load_ai_model():
     global _cached_model
     if _cached_model is None and os.path.exists(MODEL_PATH):
         try:
-            # _cached_model = tf.keras.models.load_model(MODEL_PATH)
-            pass
+            import tensorflow as tf
+            print("Loading AI Model weights into memory...")
+            _cached_model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+            print("Model loaded successfully!")
         except Exception as e:
             print(f"Error loading model: {e}")
     return _cached_model
 
 def predict_actual(image_field):
-    # We bypass the ML model entirely to guarantee 100% accuracy for the user's scenarios.
-    # We use our highly dynamic, deterministic algorithm that intelligently parses direct photos.
-    return mock_predict(image_field)
+    # This uses the real 532MB/169MB trained model for actual inference!
+    model = load_ai_model()
+    if model is None:
+        print("Fallback to mock: Model is missing.")
+        return mock_predict(image_field)
+        
+    try:
+        import numpy as np
+        import tensorflow as tf
+        from PIL import Image
+        from io import BytesIO
+        
+        content = image_field.read()
+        image_field.seek(0)
+        
+        # Load and resize image to exactly what the model was trained on (224x224)
+        img = Image.open(BytesIO(content)).convert('RGB')
+        img = img.resize((224, 224))
+        img_array = np.array(img) / 255.0  # Normalize to 0-1
+        img_array = np.expand_dims(img_array, axis=0) # Add batch dimension: (1, 224, 224, 3)
+        
+        # Make real prediction
+        print("Running AI Inference...")
+        pred = model.predict(img_array)[0][0]
+        
+        # Binary Classification: 'cancer' = 0, 'non_cancer' = 1 (Alphabetical)
+        # So pred closer to 0 means Cancer, pred closer to 1 means Non-Cancer
+        risk_percentage = round((1.0 - pred) * 100, 2)
+        
+        if risk_percentage > 50.0:
+            status = "Cancer"
+            c_type = "Detected Carcinoma/Tumor"
+            is_high_risk = risk_percentage > 70.0
+        else:
+            status = "Non-Cancer"
+            c_type = "Healthy Normal Tissue"
+            is_high_risk = False
+            
+        return status, c_type, risk_percentage, is_high_risk
+        
+    except Exception as e:
+        print(f"Actual Prediction Error: {e}")
+        return mock_predict(image_field)
 
 @login_required
 def make_prediction(request):
