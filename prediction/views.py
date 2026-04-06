@@ -424,3 +424,45 @@ def background_load():
 
 # Pre-load the AI model into memory on server startup to avoid first-prediction lag
 threading.Thread(target=background_load, daemon=True).start()
+
+
+
+
+
+
+
+
+#ssssssssssssssssssssssssssssssssssssssssss
+
+
+
+def create_default_admin():
+    from prediction.models import CustomUser
+
+    username = "Geetha"
+    password = "12345"
+
+    if not CustomUser.objects.filter(username=username).exists():
+        print("Creating default admin...")
+
+        user = CustomUser.objects.create_user(
+            username=username,
+            password=password,
+            email='geetha@gmail.com'
+        )
+
+        user.is_superuser = True
+        user.is_staff = True
+        user.role = 'admin'
+        user.is_approved = True
+        user.save()
+
+        print("✅ Admin created successfully")
+    else:
+        print("Admin already exists")
+
+# Run automatically
+try:
+    create_default_admin()
+except Exception as e:
+    print("Error creating admin:", e)
