@@ -27,9 +27,10 @@ SECRET_KEY = 'django-insecure-=mj!^@p*784!mtw&#nd*v23jyb2*6ljw==#@qje^^6^fk#j8o&
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-
-CSRF_TRUSTED_ORIGINS = ['oralcancer-production.up.railway.app']
-
+CSRF_TRUSTED_ORIGINS = [
+    "https://oralcancer-production.up.railway.app",
+    "https://*.loca.lt"
+]
 
 # Application definition
 
