@@ -196,33 +196,43 @@ def mock_predict(image_field):
     random.seed()
     
     if is_cancer:
-        status = "Cancer"
-        cancer_types = [
-            'Squamous Cell Carcinoma (Tongue)', 
-            'Verrucous Carcinoma', 
-            'Oral Melanoma'
-        ]
-        
         hash_val = int(hashlib.md5(content).hexdigest(), 16)
         random.seed(hash_val)
         
-        cancer_type = random.choice(cancer_types)
-        
-        # Risk is dynamically adjusted based on the hash string to be unique per image
-        base_risk = random.uniform(50.0, 99.9)
+        # Generates a risk percentage that falls into the Cancer/Leukoplakia ranges
+        base_risk = random.uniform(70.1, 99.9)
         risk_percentage = round(base_risk, 2)
-        is_high_risk = risk_percentage > 65
         random.seed()
     else:
-        status = "Non-Cancer"
-        cancer_type = "Normal Tongue Tissue"
-        
         hash_val = int(hashlib.md5(content).hexdigest(), 16)
         random.seed(hash_val)
-        # Random but deterministic safe risk
-        risk_percentage = round(random.uniform(1.0, 29.9), 2)
-        is_high_risk = False
+        
+        # Generates a safe risk percentage that falls into Non-cancer/Thrush/Lichens
+        base_risk = random.uniform(1.0, 70.0)
+        risk_percentage = round(base_risk, 2)
         random.seed()
+        
+    # Map the mocked risk percentage to exactly 5 classes requested
+    if risk_percentage <= 30.0:
+        status = "Non-Cancer"
+        cancer_type = "Non-cancer"
+        is_high_risk = False
+    elif risk_percentage <= 50.0:
+        status = "Low Risk"
+        cancer_type = "Thrush"
+        is_high_risk = False
+    elif risk_percentage <= 70.0:
+        status = "Moderate Risk"
+        cancer_type = "Lichens"
+        is_high_risk = False
+    elif risk_percentage <= 85.0:
+        status = "High Risk"
+        cancer_type = "Leukoplakia"
+        is_high_risk = True
+    else:
+        status = "Cancer"
+        cancer_type = "Squamous Cell Carcinoma (SCC)"
+        is_high_risk = True
         
     return status, cancer_type, risk_percentage, is_high_risk
 
@@ -265,20 +275,34 @@ def predict_actual(image_field):
         
         # Make real prediction
         print("Running AI Inference...")
-        pred = model.predict(img_array)[0][0]
+        pred = float(model.predict(img_array)[0][0])
+        print(f"Raw Model Prediction: {pred}")
         
-        # Binary Classification: 'cancer' = 0, 'non_cancer' = 1 (Alphabetical)
-        # So pred closer to 0 means Cancer, pred closer to 1 means Non-Cancer
-        risk_percentage = round((1.0 - pred) * 100, 2)
+        # Based on user reports and testing, the model outputs values closer to 1.0 for Cancer 
+        # and closer to 0.0 for Non-Cancer. Therefore, risk is directly proportional to pred.
+        risk_percentage = round(pred * 100, 2)
         
-        if risk_percentage > 50.0:
-            status = "Cancer"
-            c_type = "Detected Carcinoma/Tumor"
-            is_high_risk = risk_percentage > 70.0
-        else:
+        # Map risk percentage to the 5 requested classes
+        if risk_percentage <= 30.0:
             status = "Non-Cancer"
-            c_type = "Healthy Normal Tissue"
+            c_type = "Non-cancer"
             is_high_risk = False
+        elif risk_percentage <= 50.0:
+            status = "Low Risk"
+            c_type = "Thrush"
+            is_high_risk = False
+        elif risk_percentage <= 70.0:
+            status = "Moderate Risk"
+            c_type = "Lichens"
+            is_high_risk = False
+        elif risk_percentage <= 85.0:
+            status = "High Risk"
+            c_type = "Leukoplakia"
+            is_high_risk = True
+        else:
+            status = "Cancer"
+            c_type = "Squamous Cell Carcinoma (SCC)"
+            is_high_risk = True
             
         return status, c_type, risk_percentage, is_high_risk
         
@@ -457,7 +481,7 @@ def create_default_admin():
         user.is_approved = True
         user.save()
 
-        print("✅ Admin created successfully")
+        print("SUCCESS: Admin created successfully")
     else:
         print("Admin already exists")
 

@@ -1,0 +1,14 @@
+{
+  "cli": {
+    "version": ">= 14.1.1",
+    "promptToConfigurePushNotifications": false
+  },
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {}
+  }
+}
